@@ -17,7 +17,8 @@ def home():
 def analyze_products():
     data = request.get_json()
 
-    original_input = data.get("products", "")
+    original_input = data.get("original_input", "")
+
     if not original_input:
         return jsonify({
             "count": 0,
