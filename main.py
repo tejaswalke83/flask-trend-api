@@ -6,8 +6,8 @@ from openai import OpenAI
 app = Flask(__name__)
 CORS(app)
 
-# Initialize OpenAI client with your API key
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Initialize OpenAI client using environment variable
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 @app.route('/')
 def home():
@@ -34,10 +34,10 @@ def analyze_products():
     else:
         products = []
 
-    # Generate prompt for GPT
+    # Create prompt
     prompt = f"Analyze the following products for market trends, categories, and popularity:\n\n{products}"
 
-    # Call OpenAI GPT-4 API
+    # Call GPT-4
     try:
         response = client.chat.completions.create(
             model="gpt-4",
