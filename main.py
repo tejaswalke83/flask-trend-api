@@ -1,13 +1,13 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
-import openai
+from openai import OpenAI
 
 app = Flask(__name__)
 CORS(app)
 
-# Load OpenAI API key
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Initialize OpenAI client with your API key
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @app.route('/')
 def home():
@@ -17,8 +17,7 @@ def home():
 def analyze_products():
     data = request.get_json()
 
-    original_input = data.get("original_input", "")
-
+    original_input = data.get("products", "")
     if not original_input:
         return jsonify({
             "count": 0,
@@ -35,16 +34,18 @@ def analyze_products():
     else:
         products = []
 
-    # Call OpenAI for product trend analysis
+    # Generate prompt for GPT
+    prompt = f"Analyze the following products for market trends, categories, and popularity:\n\n{products}"
+
+    # Call OpenAI GPT-4 API
     try:
-        prompt = f"Analyze the following products for market trends, categories, and popularity:\n\n{products}"
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": "You are a market research assistant."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=200
+            max_tokens=300
         )
         analysis = response.choices[0].message.content.strip()
     except Exception as e:
