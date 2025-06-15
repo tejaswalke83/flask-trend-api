@@ -4,24 +4,19 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-@app.route('/')
-def index():
-    return 'Flask service is running.'
+@app.route("/")
+def home():
+    return "Flask service is running."
 
-@app.route('/analyze', methods=['POST'])
-def analyze_product():
-    data = request.get_json()
-    product = data.get('product', '').lower()
+@app.route("/analyze", methods=["POST"])
+def analyze():
+    data = request.json
+    products = data.get("products", [])
+    return jsonify({
+        "message": "Received products",
+        "count": len(products),
+        "products": products
+    })
 
-    if not product:
-        return jsonify({"error": "No product provided"}), 400
-
-    # Simulated logic – later we’ll connect to Google Trends / Apify
-    mock_response = {
-        "product": product,
-        "trend": "rising",
-        "suggestion": f"Try eco-friendly {product}s",
-        "category": "Apparel" if "shirt" in product or "jeans" in product else "General"
-    }
-
-    return jsonify(mock_response)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8000)
