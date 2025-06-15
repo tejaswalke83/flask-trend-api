@@ -1,39 +1,60 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import os
+import openai
 
 app = Flask(__name__)
 CORS(app)
 
-@app.route('/', methods=['GET'])
+# Load OpenAI API key
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+@app.route('/')
 def home():
-    return "Flask service is running"
+    return 'Flask service is running'
 
 @app.route('/analyze', methods=['POST'])
 def analyze_products():
-    try:
-        data = request.get_json(force=True, silent=True)
+    data = request.get_json()
 
-        if not data:
-            return jsonify({"count": 0, "message": "No JSON received", "products": []})
-
-        if isinstance(data, list):
-            input_data = data[0]
-        else:
-            input_data = data
-
-        raw_input = input_data.get("original_input", "")
-        
-        # Normalize input: split by comma or newline
-        raw_products = [item.strip() for item in raw_input.replace('\n', ',').split(',') if item.strip()]
-
+    original_input = data.get("products", "")
+    if not original_input:
         return jsonify({
-            "count": len(raw_products),
-            "message": "Received products",
-            "products": raw_products
+            "count": 0,
+            "message": "No input received",
+            "products": [],
+            "analysis": ""
         })
 
+    # Clean and split product list
+    if isinstance(original_input, str):
+        products = [item.strip() for item in original_input.replace("\n", ",").split(",") if item.strip()]
+    elif isinstance(original_input, list):
+        products = [str(item).strip() for item in original_input]
+    else:
+        products = []
+
+    # Call OpenAI for product trend analysis
+    try:
+        prompt = f"Analyze the following products for market trends, categories, and popularity:\n\n{products}"
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a market research assistant."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=200
+        )
+        analysis = response.choices[0].message.content.strip()
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        analysis = f"Error generating analysis: {str(e)}"
+
+    return jsonify({
+        "count": len(products),
+        "message": "Received products",
+        "products": products,
+        "analysis": analysis
+    })
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000)
+    app.run(debug=True, host='0.0.0.0', port=8000)
