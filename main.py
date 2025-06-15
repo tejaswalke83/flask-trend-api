@@ -4,19 +4,23 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-@app.route("/")
-def home():
-    return "Flask service is running."
-
 @app.route("/analyze", methods=["POST"])
-def analyze():
-    data = request.json
-    products = data.get("products", [])
-    return jsonify({
-        "message": "Received products",
-        "count": len(products),
-        "products": products
-    })
+def analyze_products():
+    try:
+        data = request.get_json()
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)
+        # In case data is a list (which it is)
+        if isinstance(data, list):
+            data = data[0]
+
+        products = data.get("products", [])
+        original_input = data.get("original_input", "")
+
+        return jsonify([{
+            "count": len(products),
+            "message": "Received products",
+            "products": products
+        }])
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
